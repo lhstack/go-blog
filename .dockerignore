@@ -1,0 +1,6 @@
+bin/
+data/
+web/node_modules/
+internal/webassets/dist/assets/
+internal/webassets/dist/index.html
+.git/

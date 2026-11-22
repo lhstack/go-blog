@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="day">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5efe3" />
+    <meta name="description" content="一个自托管的个人博客，取逍遥游之意。" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml" />
+    <title>博客</title>
+    <!-- 首屏样式未加载前先铺宣纸底色，避免出现白色闪烁；只铺在根元素上，避免挡住背景画布 -->
+    <style>
+      html {
+        background: #f5efe3;
+      }
+      html[data-theme='night'] {
+        background: #0b1016;
+      }
+      body {
+        margin: 0;
+        background: transparent;
+      }
+    </style>
+    <script>
+      // 在首帧之前套用已保存的主题，避免昼夜切换时闪一下亮色。
+      try {
+        var stored = localStorage.getItem('goblog.theme')
+        if (stored === 'night') {
+          document.documentElement.dataset.theme = 'night'
+          document.documentElement.style.colorScheme = 'dark'
+        }
+      } catch (error) {
+        /* localStorage 不可用时保持默认昼光 */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+services:
+  goblog:
+    build:
+      context: .
+      args:
+        NPM_REGISTRY: https://registry.npmmirror.com
+        GOPROXY: https://goproxy.cn,direct
+    image: goblog:latest
+    container_name: goblog
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      GOBLOG_ADMIN_USER: admin
+      GOBLOG_ADMIN_PASSWORD: change-me-please
+      GOBLOG_SITE_URL: http://localhost:8080
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data:/data
