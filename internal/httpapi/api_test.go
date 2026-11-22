@@ -39,7 +39,7 @@ func newTestApp(t *testing.T) *testApp {
 
 	repo := store.New(db)
 	auth := service.NewAuthService(repo.User, []byte("test-secret-key-for-integration"), time.Hour, "admin", "admin123")
-	if err := auth.EnsureAdmin(t.Context()); err != nil {
+	if _, err := auth.EnsureAdmin(t.Context()); err != nil {
 		t.Fatalf("初始化管理员: %v", err)
 	}
 	settings := service.NewSettingsService(repo.Conf)

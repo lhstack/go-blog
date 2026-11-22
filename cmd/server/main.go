@@ -20,7 +20,10 @@ import (
 	"goblog/internal/webassets"
 )
 
-const version = "0.0.1"
+const (
+	version        = "0.0.1"
+	adminLoginPath = "/admin/login"
+)
 
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "--version" {
@@ -54,8 +57,12 @@ func run() error {
 	renderer := markdown.New()
 
 	authService := service.NewAuthService(repository.User, cfg.JWTSecret, cfg.TokenTTL, cfg.AdminUser, cfg.AdminPass)
-	if err := authService.EnsureAdmin(ctx); err != nil {
+	created, err := authService.EnsureAdmin(ctx)
+	if err != nil {
 		return err
+	}
+	if created {
+		logInitialAdmin(cfg)
 	}
 
 	settingsService := service.NewSettingsService(repository.Conf)
@@ -86,7 +93,7 @@ func run() error {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		slog.Info("博客服务已启动", "addr", cfg.Addr, "dataDir", cfg.DataDir)
+		slog.Info("博客服务已启动", "addr", cfg.Addr, "dataDir", cfg.DataDir, "adminLogin", adminLoginPath)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -107,6 +114,15 @@ func run() error {
 	}
 	slog.Info("服务已退出")
 	return nil
+}
+
+func logInitialAdmin(cfg *config.Config) {
+	if cfg.AdminPassConfigured {
+		slog.Info("已创建初始管理员，请使用 GOBLOG_ADMIN_PASSWORD 配置的密码登录", "username", cfg.AdminUser)
+		return
+	}
+	slog.Warn("已创建初始管理员，请在后台「设置 → 修改密码」中修改默认密码",
+		"username", cfg.AdminUser, "defaultPassword", config.DefaultAdminPassword)
 }
 
 func setupLogger(debug bool) {

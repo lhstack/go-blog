@@ -84,7 +84,15 @@
 
 ## 快速开始
 
-### 依赖
+### 从发布包启动并登录后台
+
+解压后在终端运行 `./goblog`（Windows PowerShell：`.\goblog.exe`）。默认访问 [博客首页](http://127.0.0.1:8080/)；管理后台入口是 [http://127.0.0.1:8080/admin/login](http://127.0.0.1:8080/admin/login)。如果修改了监听端口或通过域名访问，在对应站点地址后加 `/admin/login`。
+
+空数据目录首次启动时会自动创建管理员。未配置环境变量时，用户名为 **`admin`**，密码为 **`admin123`**。请先在本机登录，在「设置 → 修改密码」中改掉默认密码，再对外开放。也可以在首次启动前设置 `GOBLOG_ADMIN_USER` 和 `GOBLOG_ADMIN_PASSWORD`；这两个变量不会重置已有账号。
+
+每次启动日志都会提示后台路径。只有新建管理员且使用内置默认密码时，日志才会显示默认密码；通过环境变量配置的密码不会写入日志。
+
+### 源码开发依赖
 
 - Go 1.26+（`go.mod` 要求 `go 1.26.0`；若本机 Go 较旧，可设 `GOTOOLCHAIN=auto` 让工具链自动下载）
 - Node.js 20+ 与 npm
@@ -107,26 +115,15 @@ make server
 cd web && npm install && npm run dev
 ```
 
-等价的直接命令（本机没有 `make` 时）：
+等价的直接命令（在项目根目录执行；`go run` 需指定绝对数据目录，避免使用临时二进制旁的目录）：
 
 ```bash
-go run ./cmd/server
+GOBLOG_DATA_DIR="$PWD/data" go run ./cmd/server
 # 另一个终端
 cd web && npm install && npm run dev
 ```
 
-首次启动会自动创建数据目录、SQLite 库与默认管理员：
-
-```
-用户名：admin
-密码：admin123
-```
-
-登录后请在「设置 → 修改密码」立即改掉。也可以用环境变量覆盖初始账号：
-
-```bash
-GOBLOG_ADMIN_USER=me GOBLOG_ADMIN_PASSWORD=my-secret make server
-```
+开发模式下从前端开发服务器进入后台：[http://127.0.0.1:5173/admin/login](http://127.0.0.1:5173/admin/login)。
 
 ### 生产构建
 
@@ -146,11 +143,13 @@ cd web && npm run build     # 输出到 ../internal/webassets/dist
 cd .. && go build -trimpath -ldflags="-s -w" -o bin/goblog ./cmd/server
 ```
 
-写入示例内容：
+写入示例内容（默认写到项目根目录的 `data/`，与 `make server` 和 `make dev` 一致）：
 
 ```bash
-make seed      # 或 go run ./cmd/seed
+make seed      # 或 GOBLOG_DATA_DIR="$PWD/data" go run ./cmd/seed
 ```
+
+如果希望示例内容写到 `./bin/goblog` 的默认库，使用 `GOBLOG_DATA_DIR="$PWD/bin/data" make seed`。
 
 ## 配置
 
@@ -159,7 +158,7 @@ make seed      # 或 go run ./cmd/seed
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `GOBLOG_ADDR` | `:8080` | 监听地址 |
-| `GOBLOG_DATA_DIR` | `./data` | 数据目录，存放数据库、密钥与上传文件 |
+| `GOBLOG_DATA_DIR` | `./data` | 数据目录；相对路径以可执行文件所在目录为基准，绝对路径直接使用。启动日志显示解析后的绝对路径 |
 | `GOBLOG_UPLOAD_DIR` | `$DATA_DIR/uploads` | 上传目录 |
 | `GOBLOG_JWT_SECRET` | 首次启动生成到 `$DATA_DIR/jwt.secret` | JWT 签名密钥 |
 | `GOBLOG_TOKEN_TTL_HOURS` | `168` | 令牌有效期（小时） |
@@ -262,7 +261,9 @@ cd web && npm run typecheck
 
 ### 直接运行
 
-用 `bin/goblog` 配合一个数据目录即可；`data/` 就是全部状态，备份时连同 `goblog.db-wal` 一起复制。
+直接运行 `bin/goblog` 默认使用二进制旁的 `bin/data/`，与终端当前目录无关。数据目录存放 `goblog.db`、`jwt.secret` 和默认的 `uploads/`。请保留该目录；`make clean` 只清理本地编译的二进制和前端产物，不删除数据或发布包。
+
+从旧版本升级时，已有数据不会自动移动。若此前的数据目录是启动位置下的 `data/`，请将 `GOBLOG_DATA_DIR` 设为那个目录的绝对路径，再启动新版，以继续使用原数据库、密钥和上传目录。
 
 如需反向代理，建议在代理层终止 TLS 并设置 `GOBLOG_SITE_URL`，这样 RSS 与站点地图里的链接才是正确的绝对地址。
 

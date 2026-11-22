@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -53,35 +52,32 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// EnsureAdmin 在首次启动且无账号时创建初始管理员。
-// 该操作幂等：已有账号时直接返回。
-func (s *AuthService) EnsureAdmin(ctx context.Context) error {
+// EnsureAdmin 在没有账号时创建初始管理员，只有实际创建时才返回 true。
+func (s *AuthService) EnsureAdmin(ctx context.Context) (created bool, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.ensureOnce {
-		return nil
+		return false, nil
 	}
 
 	total, err := s.users.Count(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if total > 0 {
 		s.ensureOnce = true
-		return nil
+		return false, nil
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(s.adminPass), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("生成密码哈希: %w", err)
+		return false, fmt.Errorf("生成密码哈希: %w", err)
 	}
 	if err := s.users.Create(ctx, s.adminUser, string(hash), s.adminUser, time.Now().UTC()); err != nil {
-		return err
+		return false, err
 	}
 	s.ensureOnce = true
-	slog.Warn("已创建初始管理员账号，请尽快修改密码",
-		"username", s.adminUser)
-	return nil
+	return true, nil
 }
 
 // Login 校验凭据并签发令牌。

@@ -4,6 +4,7 @@
 GO ?= $(shell command -v go 2>/dev/null || echo /usr/local/go/bin/go)
 BIN := bin/goblog
 DIST := internal/webassets/dist
+DEV_DATA_ENV = GOBLOG_DATA_DIR="$${GOBLOG_DATA_DIR:-$$PWD/data}"
 
 .PHONY: help
 help:
@@ -22,11 +23,11 @@ dev:
 	@echo "后端 → http://127.0.0.1:8080  前端 → http://127.0.0.1:5173"
 	@( cd web && npm run dev ) & \
 	trap 'kill %1 2>/dev/null' INT TERM EXIT; \
-	$(GO) run ./cmd/server
+	$(DEV_DATA_ENV) $(GO) run ./cmd/server
 
 .PHONY: server
 server:
-	$(GO) run ./cmd/server
+	$(DEV_DATA_ENV) $(GO) run ./cmd/server
 
 .PHONY: web
 web:
@@ -49,7 +50,7 @@ test:
 
 .PHONY: seed
 seed:
-	$(GO) run ./cmd/seed
+	$(DEV_DATA_ENV) $(GO) run ./cmd/seed
 
 .PHONY: run
 run: build
@@ -57,5 +58,6 @@ run: build
 
 .PHONY: clean
 clean:
-	@rm -rf bin $(DIST)/assets $(DIST)/index.html
-	@echo "已清理 bin/ 与前端产物"
+	@rm -f $(BIN)
+	@rm -rf $(DIST)/assets $(DIST)/index.html
+	@echo "已清理 $(BIN) 与前端产物，保留数据目录与发布包"
